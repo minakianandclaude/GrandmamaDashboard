@@ -389,6 +389,21 @@
     let refreshTimer = null;
 
     /**
+     * Hide loading spinner and show dashboard
+     */
+    function showDashboard() {
+        const loading = document.getElementById('loading');
+        const dashboard = document.getElementById('dashboard');
+
+        if (loading) {
+            loading.style.display = 'none';
+        }
+        if (dashboard) {
+            dashboard.style.display = 'grid';
+        }
+    }
+
+    /**
      * Refresh dashboard data
      */
     async function refreshDashboard() {
@@ -396,6 +411,7 @@
 
         if (briefing) {
             updateDashboard(briefing);
+            showDashboard();
         }
     }
 
