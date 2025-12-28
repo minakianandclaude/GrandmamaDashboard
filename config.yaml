@@ -1,0 +1,54 @@
+# Good Morning Dashboard Configuration
+# =====================================
+# This file configures the morning briefing dashboard for elderly care.
+
+# Care recipient's name (used in greetings)
+recipient_name: "Eleanor"
+
+# Caregiver's name (used in appointment prep reminders)
+caregiver_name: "Sarah"
+
+# Timezone in IANA format
+# See: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+timezone: "America/New_York"
+
+# How many minutes before an appointment to show a prep reminder
+# e.g., 60 means "Sarah will help you get ready around 1:30" for a 2:30 appointment
+prep_reminder_minutes: 60
+
+# Weather configuration
+weather:
+  # OpenWeatherMap API key (can also be set via OPENWEATHERMAP_API_KEY env var)
+  # Get your free API key at: https://openweathermap.org/api
+  api_key: null  # Set this or use environment variable
+
+  # Location: specify either city OR lat/lon coordinates
+  city: "New York, NY"
+  # lat: 40.7128
+  # lon: -74.0060
+
+  # Units: "imperial" for Fahrenheit, "metric" for Celsius
+  units: "imperial"
+
+# Google Calendar configuration
+calendar:
+  # Path to Google OAuth credentials file
+  # Download from Google Cloud Console > APIs & Services > Credentials
+  credentials_file: "credentials.json"
+
+  # Path where the OAuth token will be cached after first login
+  token_file: "token.json"
+
+  # Calendar ID to fetch events from ("primary" for main calendar)
+  calendar_id: "primary"
+
+# Dashboard display configuration
+dashboard:
+  # Theme: "calm" (dark), "bright" (light), or "high_contrast"
+  theme: "calm"
+
+  # How often to refresh data (in seconds)
+  refresh_interval_seconds: 60
+
+  # Port for the dashboard web server
+  port: 8080
