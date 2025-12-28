@@ -13,7 +13,7 @@ A personalized morning briefing system for elderly care companions. Displays a c
 | 5 | Briefing assembly & mock data | Complete |
 | 6 | Dashboard backend (Flask API) | Complete |
 | 7 | Dashboard frontend (TV UI) | Complete |
-| 8 | CLI integration | Pending |
+| 8 | CLI integration | Complete |
 | 9 | Spoken script generator (TTS) | Pending |
 | 10 | Documentation & polish | Pending |
 
@@ -91,17 +91,29 @@ The dashboard will be available at `http://localhost:8080`.
 | `GET /api/health` | Health check with status |
 | `GET /api/config` | Display configuration |
 
-### CLI (Coming in Phase 8)
+### CLI Commands
 
 ```bash
-# Start the dashboard server via CLI
+# Start the dashboard server
 python -m src.cli dashboard
 
 # Start with mock data (no API keys needed)
 python -m src.cli dashboard --mock
 
-# Print briefing JSON
+# Start on a custom port with debug mode
+python -m src.cli dashboard --mock --port 3000 --debug
+
+# Print briefing as JSON
 python -m src.cli briefing --mock
+
+# Print spoken script for TTS
+python -m src.cli script --mock
+
+# Use a custom config file
+python -m src.cli --config /path/to/config.yaml briefing
+
+# Enable verbose logging
+python -m src.cli --verbose dashboard --mock
 ```
 
 ## API Setup
@@ -217,7 +229,8 @@ python -m pytest tests/test_weather.py -v
 | Calendar Source | 40 |
 | Briefing | 26 |
 | Dashboard Server | 38 |
-| **Total** | **248** |
+| CLI | 29 |
+| **Total** | **277** |
 
 ### Project Structure
 
@@ -225,6 +238,7 @@ python -m pytest tests/test_weather.py -v
 GrandmamaDashboard/
 ├── src/
 │   ├── __init__.py
+│   ├── cli.py                 # Command-line interface
 │   ├── config.py              # Configuration loading
 │   ├── models.py              # Data models (Briefing, DateInfo, etc.)
 │   ├── logging_config.py      # Logging setup

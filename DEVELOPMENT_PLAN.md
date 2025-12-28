@@ -384,6 +384,14 @@ python -m src.cli script                 # Print spoken script
 - Test flag combinations
 - Test error handling and exit codes
 
+### Status: COMPLETE
+- Full CLI with `dashboard`, `briefing`, and `script` commands
+- `--mock` flag on each command for testing without APIs
+- `--port` and `--debug` flags for dashboard command
+- `--config` and `--verbose` global options
+- Basic script generator (placeholder for Phase 9 improvements)
+- 29 tests for CLI functionality
+
 ---
 
 ## Phase 9: Spoken Script Generator (TTS Prep)
