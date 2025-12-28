@@ -9,7 +9,7 @@ A personalized morning briefing system for elderly care companions. Displays a c
 | 1 | Project structure, config, data models | Complete |
 | 2 | Date/Time source | Complete |
 | 3 | Weather source (OpenWeatherMap) | Complete |
-| 4 | Calendar source (Google Calendar) | Pending |
+| 4 | Calendar source (Google Calendar) | Complete |
 | 5 | Briefing assembly & mock data | Pending |
 | 6 | Dashboard backend (Flask API) | Pending |
 | 7 | Dashboard frontend (TV UI) | Pending |
@@ -192,7 +192,8 @@ python -m pytest tests/test_weather.py -v
 | Models | 17 |
 | DateTime Source | 51 |
 | Weather Source | 50 |
-| **Total** | **144** |
+| Calendar Source | 40 |
+| **Total** | **184** |
 
 ### Project Structure
 
