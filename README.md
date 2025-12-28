@@ -12,7 +12,7 @@ A personalized morning briefing system for elderly care companions. Displays a c
 | 4 | Calendar source (Google Calendar) | Complete |
 | 5 | Briefing assembly & mock data | Complete |
 | 6 | Dashboard backend (Flask API) | Complete |
-| 7 | Dashboard frontend (TV UI) | Pending |
+| 7 | Dashboard frontend (TV UI) | Complete |
 | 8 | CLI integration | Pending |
 | 9 | Spoken script generator (TTS) | Pending |
 | 10 | Documentation & polish | Pending |
@@ -216,8 +216,8 @@ python -m pytest tests/test_weather.py -v
 | Weather Source | 50 |
 | Calendar Source | 40 |
 | Briefing | 26 |
-| Dashboard Server | 34 |
-| **Total** | **244** |
+| Dashboard Server | 38 |
+| **Total** | **248** |
 
 ### Project Structure
 
@@ -236,7 +236,11 @@ GrandmamaDashboard/
 ├── dashboard/
 │   ├── __init__.py
 │   ├── server.py              # Flask API server
-│   ├── static/                # CSS/JS assets
+│   ├── static/
+│   │   ├── css/
+│   │   │   └── dashboard.css  # TV-optimized styling
+│   │   └── js/
+│   │       └── dashboard.js   # Data fetching & updates
 │   └── templates/
 │       └── index.html         # Dashboard template
 ├── tests/

@@ -304,8 +304,43 @@ class TestIndexRoute:
         response = client.get("/")
         html = response.data.decode("utf-8")
 
-        assert "setTimeout" in html
-        assert "reload" in html
+        # Dashboard uses external JS file for refresh
+        assert "dashboard.js" in html
+        # Also has noscript fallback with meta refresh
+        assert "noscript" in html
+        assert 'http-equiv="refresh"' in html
+
+
+    def test_index_includes_theme_attribute(self, client):
+        """Test index page has theme data attribute."""
+        response = client.get("/")
+        html = response.data.decode("utf-8")
+
+        assert 'data-theme="calm"' in html
+
+    def test_index_includes_css(self, client):
+        """Test index page links to CSS file."""
+        response = client.get("/")
+        html = response.data.decode("utf-8")
+
+        assert "dashboard.css" in html
+
+    def test_index_includes_weather_icon(self, client):
+        """Test index page displays weather icon for mock data."""
+        response = client.get("/")
+        html = response.data.decode("utf-8")
+
+        # Mock data has "partly cloudy" which should show weather icon section
+        assert "weather-icon" in html
+
+    def test_index_includes_appointments(self, client):
+        """Test index page displays appointments from mock data."""
+        response = client.get("/")
+        html = response.data.decode("utf-8")
+
+        # Mock data includes appointments
+        assert "appointment" in html
+        assert "appointment-time" in html
 
 
 class TestCORSHeaders:

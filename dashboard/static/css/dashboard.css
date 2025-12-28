@@ -1,0 +1,505 @@
+/**
+ * Good Morning Dashboard - TV-Optimized Stylesheet
+ *
+ * Design Principles:
+ * - Large text: Minimum 32px body, 72px+ for key info
+ * - High contrast for readability
+ * - Simple grid layout, no scrolling
+ * - Calming aesthetic with soft colors
+ * - Glanceable from across the room
+ */
+
+/* ============================================
+   CSS Custom Properties (Theme Variables)
+   ============================================ */
+
+:root {
+    /* Default: Calm theme */
+    --bg-primary: #1a2744;
+    --bg-secondary: rgba(255, 255, 255, 0.08);
+    --bg-card: rgba(255, 255, 255, 0.06);
+    --text-primary: #f5f5dc;
+    --text-secondary: rgba(245, 245, 220, 0.75);
+    --text-muted: rgba(245, 245, 220, 0.5);
+    --accent: #e8c547;
+    --accent-soft: rgba(232, 197, 71, 0.2);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+
+    /* Typography */
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   "Helvetica Neue", Arial, sans-serif;
+    --font-size-giant: 5rem;      /* 80px - Temperature */
+    --font-size-huge: 4rem;       /* 64px - Time */
+    --font-size-large: 2.5rem;    /* 40px - Greeting */
+    --font-size-medium: 1.75rem;  /* 28px - Section headers */
+    --font-size-normal: 1.5rem;   /* 24px - Appointment titles */
+    --font-size-small: 1.25rem;   /* 20px - Secondary info */
+    --font-size-tiny: 1rem;       /* 16px - Prep reminders */
+
+    /* Spacing */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+    --spacing-xxl: 4rem;
+
+    /* Animation */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.4s ease;
+    --transition-slow: 0.6s ease;
+}
+
+/* Bright Theme - for well-lit rooms */
+[data-theme="bright"] {
+    --bg-primary: #faf8f5;
+    --bg-secondary: rgba(0, 0, 0, 0.04);
+    --bg-card: rgba(0, 0, 0, 0.03);
+    --text-primary: #2d2d2d;
+    --text-secondary: rgba(45, 45, 45, 0.75);
+    --text-muted: rgba(45, 45, 45, 0.5);
+    --accent: #2a9d8f;
+    --accent-soft: rgba(42, 157, 143, 0.15);
+    --border-color: rgba(0, 0, 0, 0.08);
+    --shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* High Contrast Theme - for vision impairment */
+[data-theme="high_contrast"] {
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #b0b0b0;
+    --accent: #ffdd00;
+    --accent-soft: rgba(255, 221, 0, 0.2);
+    --border-color: #444444;
+    --shadow: 0 4px 24px rgba(255, 255, 255, 0.1);
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    height: 100%;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.4;
+    overflow: hidden;
+    transition: background-color var(--transition-normal),
+                color var(--transition-normal);
+}
+
+/* ============================================
+   Dashboard Layout
+   ============================================ */
+
+.dashboard {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    padding: var(--spacing-xl);
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+/* ============================================
+   Header / Greeting
+   ============================================ */
+
+.greeting-section {
+    text-align: center;
+    padding-bottom: var(--spacing-lg);
+}
+
+.greeting {
+    font-size: var(--font-size-large);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+}
+
+.greeting-name {
+    color: var(--accent);
+    font-weight: 400;
+}
+
+/* ============================================
+   Main Content Grid
+   ============================================ */
+
+.main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: var(--spacing-lg);
+    align-content: start;
+}
+
+/* ============================================
+   Card Styles
+   ============================================ */
+
+.card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    transition: transform var(--transition-fast),
+                box-shadow var(--transition-fast);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.card-title {
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--spacing-md);
+}
+
+/* ============================================
+   Date/Time Card
+   ============================================ */
+
+.datetime-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.time-display {
+    font-size: var(--font-size-huge);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    margin-bottom: var(--spacing-xs);
+}
+
+.day-of-week {
+    font-size: var(--font-size-medium);
+    font-weight: 400;
+    color: var(--accent);
+    margin-bottom: var(--spacing-xs);
+}
+
+.full-date {
+    font-size: var(--font-size-normal);
+    color: var(--text-secondary);
+}
+
+.time-period {
+    font-size: var(--font-size-small);
+    color: var(--text-muted);
+    margin-top: var(--spacing-sm);
+}
+
+/* ============================================
+   Weather Card
+   ============================================ */
+
+.weather-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.weather-icon {
+    font-size: var(--font-size-giant);
+    margin-bottom: var(--spacing-sm);
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.temperature {
+    font-size: var(--font-size-giant);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+}
+
+.temperature-unit {
+    font-size: var(--font-size-medium);
+    font-weight: 300;
+    vertical-align: super;
+    margin-left: -0.2em;
+}
+
+.weather-conditions {
+    font-size: var(--font-size-normal);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+    text-transform: capitalize;
+}
+
+.weather-description {
+    font-size: var(--font-size-small);
+    color: var(--accent);
+    margin-top: var(--spacing-sm);
+    font-style: italic;
+}
+
+.weather-unavailable {
+    font-size: var(--font-size-normal);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ============================================
+   Schedule Card
+   ============================================ */
+
+.schedule-card {
+    grid-column: 1 / -1;
+}
+
+.appointments-list {
+    list-style: none;
+}
+
+.appointment {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--border-color);
+    align-items: start;
+}
+
+.appointment:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.appointment:first-child {
+    padding-top: 0;
+}
+
+.appointment-time {
+    font-size: var(--font-size-normal);
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 140px;
+    text-align: right;
+}
+
+.appointment-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.appointment-title {
+    font-size: var(--font-size-normal);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.appointment-description {
+    font-size: var(--font-size-small);
+    color: var(--text-secondary);
+}
+
+.appointment-prep {
+    font-size: var(--font-size-tiny);
+    color: var(--text-muted);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--accent-soft);
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: var(--spacing-xs);
+}
+
+.no-appointments {
+    font-size: var(--font-size-normal);
+    color: var(--text-muted);
+    text-align: center;
+    padding: var(--spacing-lg);
+    font-style: italic;
+}
+
+/* ============================================
+   Footer
+   ============================================ */
+
+.footer {
+    text-align: center;
+    padding-top: var(--spacing-lg);
+    color: var(--text-muted);
+    font-size: var(--font-size-tiny);
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.status-dot.error {
+    background: #f87171;
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid var(--bg-secondary);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   Error State
+   ============================================ */
+
+.error-banner {
+    background: rgba(248, 113, 113, 0.2);
+    border: 1px solid rgba(248, 113, 113, 0.4);
+    border-radius: 12px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+    color: var(--text-primary);
+    font-size: var(--font-size-small);
+}
+
+/* ============================================
+   Fade Animation for Data Updates
+   ============================================ */
+
+.fade-update {
+    animation: fadeUpdate 0.6s ease;
+}
+
+@keyframes fadeUpdate {
+    0% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+/* Large TVs (4K) */
+@media (min-width: 2560px) {
+    html {
+        font-size: 24px;
+    }
+
+    .dashboard {
+        padding: var(--spacing-xxl);
+    }
+}
+
+/* Standard HD TVs (1080p) */
+@media (max-width: 1920px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+/* Tablets and smaller */
+@media (max-width: 1024px) {
+    html {
+        font-size: 14px;
+    }
+
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+
+    .schedule-card {
+        grid-column: 1;
+    }
+
+    .dashboard {
+        padding: var(--spacing-lg);
+    }
+}
+
+/* Mobile (shouldn't happen on TV, but good fallback) */
+@media (max-width: 640px) {
+    html {
+        font-size: 12px;
+    }
+
+    .dashboard {
+        padding: var(--spacing-md);
+    }
+
+    .appointment {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xs);
+    }
+
+    .appointment-time {
+        text-align: left;
+    }
+}
+
+/* ============================================
+   Print Styles (for screenshots/debugging)
+   ============================================ */
+
+@media print {
+    body {
+        background: white;
+        color: black;
+    }
+
+    .card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
