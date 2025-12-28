@@ -11,7 +11,7 @@ A personalized morning briefing system for elderly care companions. Displays a c
 | 3 | Weather source (OpenWeatherMap) | Complete |
 | 4 | Calendar source (Google Calendar) | Complete |
 | 5 | Briefing assembly & mock data | Complete |
-| 6 | Dashboard backend (Flask API) | Pending |
+| 6 | Dashboard backend (Flask API) | Complete |
 | 7 | Dashboard frontend (TV UI) | Pending |
 | 8 | CLI integration | Pending |
 | 9 | Spoken script generator (TTS) | Pending |
@@ -69,10 +69,32 @@ timezone: "America/New_York"
 prep_reminder_minutes: 60
 ```
 
-### Running (Coming in Phase 8)
+### Running the Dashboard Server
 
 ```bash
-# Start the dashboard server
+# Start the dashboard server with mock data (no API keys needed)
+python -m dashboard.server --mock
+
+# Start in debug mode (auto-reload on code changes)
+python -m dashboard.server --mock --debug
+```
+
+The dashboard will be available at `http://localhost:8080`.
+
+### API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /` | Dashboard HTML page (auto-refreshes) |
+| `GET /api/briefing` | Current briefing as JSON |
+| `GET /api/briefing?mock=true` | Force mock data |
+| `GET /api/health` | Health check with status |
+| `GET /api/config` | Display configuration |
+
+### CLI (Coming in Phase 8)
+
+```bash
+# Start the dashboard server via CLI
 python -m src.cli dashboard
 
 # Start with mock data (no API keys needed)
@@ -194,7 +216,8 @@ python -m pytest tests/test_weather.py -v
 | Weather Source | 50 |
 | Calendar Source | 40 |
 | Briefing | 26 |
-| **Total** | **210** |
+| Dashboard Server | 34 |
+| **Total** | **244** |
 
 ### Project Structure
 
@@ -205,19 +228,25 @@ GrandmamaDashboard/
 │   ├── config.py              # Configuration loading
 │   ├── models.py              # Data models (Briefing, DateInfo, etc.)
 │   ├── logging_config.py      # Logging setup
+│   ├── briefing.py            # Briefing assembly & mock data
 │   └── data_sources/
 │       ├── datetime_source.py # Date/time formatting
 │       ├── weather.py         # OpenWeatherMap integration
 │       └── calendar.py        # Google Calendar integration
-├── dashboard/                  # Web UI (Phase 7)
-│   ├── server.py
-│   ├── static/
+├── dashboard/
+│   ├── __init__.py
+│   ├── server.py              # Flask API server
+│   ├── static/                # CSS/JS assets
 │   └── templates/
+│       └── index.html         # Dashboard template
 ├── tests/
 │   ├── test_config.py
 │   ├── test_models.py
 │   ├── test_datetime_source.py
-│   └── test_weather.py
+│   ├── test_weather.py
+│   ├── test_calendar.py
+│   ├── test_briefing.py
+│   └── test_server.py
 ├── config.yaml                 # Example configuration
 ├── requirements.txt
 ├── DEVELOPMENT_PLAN.md         # Detailed phase planning

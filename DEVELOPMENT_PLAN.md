@@ -254,6 +254,13 @@ GET /api/health        # Health check
 - Test mock mode serves fake data
 - Test error responses for failed data sources
 
+### Status: COMPLETE
+- 34 tests passing
+- Flask app with `/`, `/api/briefing`, `/api/health`, `/api/config` endpoints
+- Basic placeholder HTML template (full UI in Phase 7)
+- CORS headers for development
+- Mock mode support via `--mock` flag
+
 ---
 
 ## Phase 7: Dashboard Frontend (Visual UI)
