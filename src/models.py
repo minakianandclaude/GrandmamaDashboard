@@ -26,14 +26,26 @@ class DateInfo:
 class WeatherInfo:
     """Weather information with practical descriptions."""
 
-    temperature_f: int  # Temperature in Fahrenheit
+    temperature_f: int  # Current/near-term temperature in Fahrenheit
     conditions: str  # e.g., "cloudy", "sunny", "rainy"
     description: str  # e.g., "a bit chilly", "quite warm"
     icon_code: Optional[str] = None  # OpenWeatherMap icon code for dashboard
+    high_f: Optional[int] = None  # Today's high temperature
+    low_f: Optional[int] = None  # Today's low temperature
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
-        return asdict(self)
+        result = {
+            "temperature_f": self.temperature_f,
+            "conditions": self.conditions,
+            "description": self.description,
+            "icon_code": self.icon_code,
+        }
+        if self.high_f is not None:
+            result["high_f"] = self.high_f
+        if self.low_f is not None:
+            result["low_f"] = self.low_f
+        return result
 
 
 @dataclass

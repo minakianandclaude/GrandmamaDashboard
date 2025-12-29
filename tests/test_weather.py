@@ -275,11 +275,26 @@ class TestWeatherSource:
 
     @pytest.fixture
     def mock_success_response(self):
-        """Create a mock successful API response."""
+        """Create a mock successful forecast API response."""
+        from datetime import date
+        today = date.today().strftime("%Y-%m-%d")
         return {
-            "main": {"temp": 52.3},
-            "weather": [
-                {"description": "broken clouds", "icon": "04d"}
+            "list": [
+                {
+                    "dt_txt": f"{today} 09:00:00",
+                    "main": {"temp": 52.3},
+                    "weather": [{"description": "broken clouds", "icon": "04d"}],
+                },
+                {
+                    "dt_txt": f"{today} 12:00:00",
+                    "main": {"temp": 58.0},
+                    "weather": [{"description": "scattered clouds", "icon": "03d"}],
+                },
+                {
+                    "dt_txt": f"{today} 15:00:00",
+                    "main": {"temp": 55.0},
+                    "weather": [{"description": "broken clouds", "icon": "04d"}],
+                },
             ],
         }
 
@@ -341,7 +356,7 @@ class TestWeatherSource:
 
     @patch("src.data_sources.weather.requests.get")
     def test_fetch_success(self, mock_get, valid_config, mock_success_response):
-        """Test successful weather fetch."""
+        """Test successful weather fetch from forecast API."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = mock_success_response
@@ -352,8 +367,10 @@ class TestWeatherSource:
 
         assert result is not None
         assert isinstance(result, WeatherInfo)
-        assert result.temperature_f == 52
-        assert result.conditions == "cloudy"
+        assert result.temperature_f == 52  # First forecast temp
+        assert result.high_f == 58  # Max of 52.3, 58.0, 55.0
+        assert result.low_f == 52  # Min of 52.3, 58.0, 55.0
+        assert result.conditions == "cloudy"  # Most common simplified condition
         assert result.description == "a bit chilly"
 
     @patch("src.data_sources.weather.requests.get")

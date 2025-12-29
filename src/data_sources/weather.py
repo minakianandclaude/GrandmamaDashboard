@@ -1,6 +1,8 @@
 """Weather data source for the Good Morning Dashboard."""
 
 import logging
+from collections import Counter
+from datetime import datetime, date
 from typing import Optional
 
 import requests
@@ -10,8 +12,8 @@ from ..models import WeatherInfo
 
 logger = logging.getLogger(__name__)
 
-# OpenWeatherMap API endpoint
-OPENWEATHERMAP_API_URL = "https://api.openweathermap.org/data/2.5/weather"
+# OpenWeatherMap Forecast API endpoint
+OPENWEATHERMAP_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 # Request timeout in seconds
 REQUEST_TIMEOUT = 10
@@ -87,9 +89,105 @@ def simplify_condition(condition: str) -> str:
     return condition_lower
 
 
+def parse_forecast_response(data: dict, target_date: Optional[date] = None) -> Optional[WeatherInfo]:
+    """
+    Parse OpenWeatherMap Forecast API response into WeatherInfo.
+
+    Aggregates 3-hour forecast intervals for today into a single forecast
+    with high/low temperatures and the most common weather condition.
+
+    Args:
+        data: JSON response from forecast API
+        target_date: Date to filter forecasts for (default: today)
+
+    Returns:
+        WeatherInfo object or None if parsing fails
+    """
+    if target_date is None:
+        target_date = date.today()
+
+    try:
+        forecast_list = data.get("list", [])
+        if not forecast_list:
+            logger.warning("No forecast data in API response")
+            return None
+
+        # Filter to only today's forecasts
+        today_forecasts = []
+        for item in forecast_list:
+            # Parse the datetime from the forecast
+            dt_txt = item.get("dt_txt", "")  # Format: "2025-01-14 12:00:00"
+            if dt_txt:
+                try:
+                    forecast_dt = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S")
+                    if forecast_dt.date() == target_date:
+                        today_forecasts.append(item)
+                except ValueError:
+                    continue
+
+        if not today_forecasts:
+            # If no forecasts for today, use the first available forecast
+            logger.info("No forecasts for today, using first available")
+            today_forecasts = forecast_list[:1]
+
+        # Extract temperatures from today's forecasts
+        temperatures = []
+        conditions_list = []
+        icon_codes = []
+
+        for item in today_forecasts:
+            main = item.get("main", {})
+            temp = main.get("temp")
+            if temp is not None:
+                temperatures.append(temp)
+
+            weather_list = item.get("weather", [])
+            if weather_list:
+                conditions_list.append(weather_list[0].get("description", ""))
+                icon_codes.append(weather_list[0].get("icon", ""))
+
+        if not temperatures:
+            logger.warning("No temperature data in forecast")
+            return None
+
+        # Calculate current/high/low temperatures
+        current_temp = int(round(temperatures[0]))  # First forecast as "current"
+        high_temp = int(round(max(temperatures)))
+        low_temp = int(round(min(temperatures)))
+
+        # Get most common condition
+        if conditions_list:
+            simplified_conditions = [simplify_condition(c) for c in conditions_list]
+            most_common = Counter(simplified_conditions).most_common(1)[0][0]
+        else:
+            most_common = "unknown"
+
+        # Get the first icon code (for current conditions)
+        icon_code = icon_codes[0] if icon_codes else None
+
+        # Get practical description based on current temp
+        description = get_temperature_description(current_temp)
+
+        return WeatherInfo(
+            temperature_f=current_temp,
+            conditions=most_common,
+            description=description,
+            icon_code=icon_code,
+            high_f=high_temp,
+            low_f=low_temp,
+        )
+
+    except (KeyError, TypeError, ValueError) as e:
+        logger.warning(f"Failed to parse forecast response: {e}")
+        return None
+
+
+# Keep the old function for backward compatibility with tests
 def parse_weather_response(data: dict) -> Optional[WeatherInfo]:
     """
-    Parse OpenWeatherMap API response into WeatherInfo.
+    Parse OpenWeatherMap current weather API response into WeatherInfo.
+
+    This is kept for backward compatibility. New code should use parse_forecast_response.
 
     Args:
         data: JSON response from API
@@ -130,7 +228,7 @@ def parse_weather_response(data: dict) -> Optional[WeatherInfo]:
 
 class WeatherSource:
     """
-    Fetches weather data from OpenWeatherMap API.
+    Fetches weather forecast data from OpenWeatherMap API.
 
     This class handles API communication and translates raw weather data
     into human-friendly descriptions suitable for elderly users.
@@ -175,10 +273,10 @@ class WeatherSource:
 
     def fetch(self) -> Optional[WeatherInfo]:
         """
-        Fetch current weather from OpenWeatherMap API.
+        Fetch weather forecast from OpenWeatherMap API.
 
         Returns:
-            WeatherInfo object with current conditions, or None if fetch fails.
+            WeatherInfo object with today's forecast, or None if fetch fails.
             Failures are logged but do not raise exceptions.
         """
         params = self._build_params()
@@ -187,7 +285,7 @@ class WeatherSource:
 
         try:
             response = requests.get(
-                OPENWEATHERMAP_API_URL,
+                OPENWEATHERMAP_FORECAST_URL,
                 params=params,
                 timeout=REQUEST_TIMEOUT,
             )
@@ -214,9 +312,13 @@ class WeatherSource:
                 return None
 
             # Parse into WeatherInfo
-            weather = parse_weather_response(data)
+            weather = parse_forecast_response(data)
             if weather:
-                logger.debug(f"Weather fetched: {weather.temperature_f}°F, {weather.conditions}")
+                logger.debug(
+                    f"Weather fetched: {weather.temperature_f}°F "
+                    f"(High: {weather.high_f}°F, Low: {weather.low_f}°F), "
+                    f"{weather.conditions}"
+                )
 
             return weather
 
