@@ -210,12 +210,6 @@ body {
     color: var(--text-secondary);
 }
 
-.time-period {
-    font-size: var(--font-size-small);
-    color: var(--text-muted);
-    margin-top: var(--spacing-sm);
-}
-
 /* ============================================
    Weather Card
    ============================================ */
@@ -223,14 +217,29 @@ body {
 .weather-card {
     display: flex;
     flex-direction: column;
+}
+
+.weather-content {
+    display: flex;
+    flex: 1;
+    gap: var(--spacing-lg);
+}
+
+/* Today's weather - left side (50%) */
+.weather-today {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     text-align: center;
+    padding-right: var(--spacing-lg);
+    border-right: 1px solid var(--border-color);
 }
 
 .weather-icon {
-    font-size: var(--font-size-giant);
-    margin-bottom: var(--spacing-sm);
+    font-size: 4rem;
+    margin-bottom: var(--spacing-xs);
     filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
 }
 
@@ -238,6 +247,7 @@ body {
     font-size: var(--font-size-giant);
     font-weight: 200;
     letter-spacing: -0.02em;
+    line-height: 1;
 }
 
 .temperature-unit {
@@ -254,17 +264,71 @@ body {
     text-transform: capitalize;
 }
 
-.weather-description {
+.weather-highlow {
     font-size: var(--font-size-small);
-    color: var(--accent);
-    margin-top: var(--spacing-sm);
-    font-style: italic;
+    color: var(--text-muted);
+    margin-top: var(--spacing-xs);
+}
+
+.weather-highlow .high {
+    color: var(--text-secondary);
+}
+
+.weather-highlow .low {
+    color: var(--text-muted);
+}
+
+/* 3-day forecast - right side (50%) */
+.weather-forecast {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding-left: var(--spacing-md);
+}
+
+.forecast-day {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+}
+
+.forecast-day-name {
+    font-size: var(--font-size-small);
+    font-weight: 500;
+    color: var(--text-secondary);
+    min-width: 3rem;
+}
+
+.forecast-icon {
+    font-size: 1.5rem;
+    min-width: 2rem;
+    text-align: center;
+}
+
+.forecast-temps {
+    font-size: var(--font-size-small);
+    margin-left: auto;
+}
+
+.forecast-temps .high {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.forecast-temps .low {
+    color: var(--text-muted);
+    margin-left: var(--spacing-xs);
 }
 
 .weather-unavailable {
     font-size: var(--font-size-normal);
     color: var(--text-muted);
     font-style: italic;
+    text-align: center;
+    padding: var(--spacing-lg);
 }
 
 /* ============================================

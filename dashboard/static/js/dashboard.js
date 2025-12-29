@@ -187,7 +187,6 @@
         const timeDisplay = document.querySelector('.time-display');
         const dayOfWeek = document.querySelector('.day-of-week');
         const fullDate = document.querySelector('.full-date');
-        const timePeriod = document.querySelector('.time-period');
 
         if (timeDisplay) {
             timeDisplay.textContent = formatTimeDisplay(dateInfo.time_of_day);
@@ -199,14 +198,6 @@
 
         if (fullDate) {
             fullDate.textContent = dateInfo.full_date;
-        }
-
-        if (timePeriod && dateInfo.time_of_day) {
-            // Extract the descriptive part
-            const parts = dateInfo.time_of_day.split(' in the ');
-            if (parts.length > 1) {
-                timePeriod.textContent = 'in the ' + parts[1];
-            }
         }
     }
 
@@ -227,14 +218,47 @@
 
         const icon = getWeatherIcon(weather.conditions);
 
+        // Build high/low display if available
+        const highLowHtml = (weather.high_f !== undefined && weather.low_f !== undefined)
+            ? `<div class="weather-highlow">
+                   <span class="high">H: ${weather.high_f}°</span>
+                   <span class="low">L: ${weather.low_f}°</span>
+               </div>`
+            : '';
+
+        // Build forecast days HTML
+        let forecastHtml = '';
+        if (weather.forecast && weather.forecast.length > 0) {
+            forecastHtml = weather.forecast.map(day => {
+                const dayIcon = getWeatherIcon(day.conditions);
+                return `
+                    <div class="forecast-day">
+                        <span class="forecast-day-name">${day.day_name}</span>
+                        <span class="forecast-icon">${dayIcon}</span>
+                        <span class="forecast-temps">
+                            <span class="high">${day.high_f}°</span>
+                            <span class="low">${day.low_f}°</span>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
         weatherCard.innerHTML = `
             <div class="card-title">Weather</div>
-            <div class="weather-icon">${icon}</div>
-            <div class="temperature">
-                ${weather.temperature_f}<span class="temperature-unit">°F</span>
+            <div class="weather-content">
+                <div class="weather-today">
+                    <div class="weather-icon">${icon}</div>
+                    <div class="temperature">
+                        ${weather.temperature_f}<span class="temperature-unit">°F</span>
+                    </div>
+                    <div class="weather-conditions">${weather.conditions}</div>
+                    ${highLowHtml}
+                </div>
+                <div class="weather-forecast">
+                    ${forecastHtml}
+                </div>
             </div>
-            <div class="weather-conditions">${weather.conditions}</div>
-            <div class="weather-description">${weather.description}</div>
         `;
     }
 

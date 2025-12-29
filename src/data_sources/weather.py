@@ -8,7 +8,7 @@ from typing import Optional
 import requests
 
 from ..config import WeatherConfig
-from ..models import WeatherInfo
+from ..models import WeatherInfo, ForecastDay
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ def parse_forecast_response(data: dict, target_date: Optional[date] = None) -> O
 
     Aggregates 3-hour forecast intervals for today into a single forecast
     with high/low temperatures and the most common weather condition.
+    Also extracts forecasts for the next 3 days.
 
     Args:
         data: JSON response from forecast API
@@ -112,19 +113,22 @@ def parse_forecast_response(data: dict, target_date: Optional[date] = None) -> O
             logger.warning("No forecast data in API response")
             return None
 
-        # Filter to only today's forecasts
-        today_forecasts = []
+        # Group forecasts by date
+        forecasts_by_date: dict[date, list] = {}
         for item in forecast_list:
-            # Parse the datetime from the forecast
             dt_txt = item.get("dt_txt", "")  # Format: "2025-01-14 12:00:00"
             if dt_txt:
                 try:
                     forecast_dt = datetime.strptime(dt_txt, "%Y-%m-%d %H:%M:%S")
-                    if forecast_dt.date() == target_date:
-                        today_forecasts.append(item)
+                    forecast_date = forecast_dt.date()
+                    if forecast_date not in forecasts_by_date:
+                        forecasts_by_date[forecast_date] = []
+                    forecasts_by_date[forecast_date].append(item)
                 except ValueError:
                     continue
 
+        # Get today's forecasts
+        today_forecasts = forecasts_by_date.get(target_date, [])
         if not today_forecasts:
             # If no forecasts for today, use the first available forecast
             logger.info("No forecasts for today, using first available")
@@ -168,6 +172,49 @@ def parse_forecast_response(data: dict, target_date: Optional[date] = None) -> O
         # Get practical description based on current temp
         description = get_temperature_description(current_temp)
 
+        # Build next 3 days forecast
+        future_forecasts = []
+        sorted_dates = sorted(forecasts_by_date.keys())
+        for future_date in sorted_dates:
+            if future_date <= target_date:
+                continue  # Skip today and past
+            if len(future_forecasts) >= 3:
+                break  # Only need 3 days
+
+            day_items = forecasts_by_date[future_date]
+            day_temps = []
+            day_conditions = []
+
+            for item in day_items:
+                main = item.get("main", {})
+                temp = main.get("temp")
+                if temp is not None:
+                    day_temps.append(temp)
+
+                weather_list = item.get("weather", [])
+                if weather_list:
+                    day_conditions.append(weather_list[0].get("description", ""))
+
+            if day_temps:
+                # Get abbreviated day name (Mon, Tue, etc.)
+                day_name = future_date.strftime("%a")
+                day_high = int(round(max(day_temps)))
+                day_low = int(round(min(day_temps)))
+
+                # Most common condition for the day
+                if day_conditions:
+                    simplified = [simplify_condition(c) for c in day_conditions]
+                    day_condition = Counter(simplified).most_common(1)[0][0]
+                else:
+                    day_condition = "unknown"
+
+                future_forecasts.append(ForecastDay(
+                    day_name=day_name,
+                    high_f=day_high,
+                    low_f=day_low,
+                    conditions=day_condition,
+                ))
+
         return WeatherInfo(
             temperature_f=current_temp,
             conditions=most_common,
@@ -175,6 +222,7 @@ def parse_forecast_response(data: dict, target_date: Optional[date] = None) -> O
             icon_code=icon_code,
             high_f=high_temp,
             low_f=low_temp,
+            forecast=future_forecasts,
         )
 
     except (KeyError, TypeError, ValueError) as e:

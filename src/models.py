@@ -23,6 +23,25 @@ class DateInfo:
 
 
 @dataclass
+class ForecastDay:
+    """Single day forecast for multi-day forecast display."""
+
+    day_name: str  # e.g., "Mon", "Tue", "Wed"
+    high_f: int  # High temperature in Fahrenheit
+    low_f: int  # Low temperature in Fahrenheit
+    conditions: str  # e.g., "cloudy", "sunny", "rainy"
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON serialization."""
+        return {
+            "day_name": self.day_name,
+            "high_f": self.high_f,
+            "low_f": self.low_f,
+            "conditions": self.conditions,
+        }
+
+
+@dataclass
 class WeatherInfo:
     """Weather information with practical descriptions."""
 
@@ -32,6 +51,7 @@ class WeatherInfo:
     icon_code: Optional[str] = None  # OpenWeatherMap icon code for dashboard
     high_f: Optional[int] = None  # Today's high temperature
     low_f: Optional[int] = None  # Today's low temperature
+    forecast: list["ForecastDay"] = field(default_factory=list)  # Next 3 days
 
     def to_dict(self) -> dict:
         """Convert to dictionary for JSON serialization."""
@@ -45,6 +65,8 @@ class WeatherInfo:
             result["high_f"] = self.high_f
         if self.low_f is not None:
             result["low_f"] = self.low_f
+        if self.forecast:
+            result["forecast"] = [f.to_dict() for f in self.forecast]
         return result
 
 

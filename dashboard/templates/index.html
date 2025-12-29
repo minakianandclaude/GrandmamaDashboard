@@ -59,42 +59,73 @@
                 <div class="full-date">
                     {{ briefing.date_info.full_date if briefing.date_info else '' }}
                 </div>
-                <div class="time-period">
-                    {%- if briefing.date_info and briefing.date_info.time_of_day -%}
-                        in the {{ briefing.date_info.time_of_day.split(' in the ')[-1] if ' in the ' in briefing.date_info.time_of_day else '' }}
-                    {%- endif -%}
-                </div>
             </article>
 
             <!-- Weather Card -->
             <article class="card weather-card">
                 <div class="card-title">Weather</div>
                 {%- if briefing.weather -%}
-                <div class="weather-icon">
-                    {%- set conditions = briefing.weather.conditions|lower -%}
-                    {%- if 'clear' in conditions or 'sunny' in conditions -%}
-                        &#9728;&#65039;
-                    {%- elif 'partly' in conditions -%}
-                        &#9925;
-                    {%- elif 'cloud' in conditions or 'overcast' in conditions -%}
-                        &#9729;&#65039;
-                    {%- elif 'thunder' in conditions or 'storm' in conditions -%}
-                        &#9928;&#65039;
-                    {%- elif 'rain' in conditions or 'drizzle' in conditions or 'shower' in conditions -%}
-                        &#127783;&#65039;
-                    {%- elif 'snow' in conditions or 'flurr' in conditions -%}
-                        &#127784;&#65039;
-                    {%- elif 'fog' in conditions or 'mist' in conditions or 'haze' in conditions or 'hazy' in conditions -%}
-                        &#127787;&#65039;
-                    {%- else -%}
-                        &#127780;&#65039;
-                    {%- endif -%}
+                <div class="weather-content">
+                    <!-- Today's Weather (left side) -->
+                    <div class="weather-today">
+                        <div class="weather-icon">
+                            {%- set conditions = briefing.weather.conditions|lower -%}
+                            {%- if 'clear' in conditions or 'sunny' in conditions -%}
+                                &#9728;&#65039;
+                            {%- elif 'partly' in conditions -%}
+                                &#9925;
+                            {%- elif 'cloud' in conditions or 'overcast' in conditions -%}
+                                &#9729;&#65039;
+                            {%- elif 'thunder' in conditions or 'storm' in conditions -%}
+                                &#9928;&#65039;
+                            {%- elif 'rain' in conditions or 'drizzle' in conditions or 'shower' in conditions -%}
+                                &#127783;&#65039;
+                            {%- elif 'snow' in conditions or 'flurr' in conditions -%}
+                                &#127784;&#65039;
+                            {%- elif 'fog' in conditions or 'mist' in conditions or 'haze' in conditions or 'hazy' in conditions -%}
+                                &#127787;&#65039;
+                            {%- else -%}
+                                &#127780;&#65039;
+                            {%- endif -%}
+                        </div>
+                        <div class="temperature">
+                            {{ briefing.weather.temperature_f }}<span class="temperature-unit">&deg;F</span>
+                        </div>
+                        <div class="weather-conditions">{{ briefing.weather.conditions }}</div>
+                        {%- if briefing.weather.high_f is not none and briefing.weather.low_f is not none -%}
+                        <div class="weather-highlow">
+                            <span class="high">H: {{ briefing.weather.high_f }}&deg;</span>
+                            <span class="low">L: {{ briefing.weather.low_f }}&deg;</span>
+                        </div>
+                        {%- endif -%}
+                    </div>
+                    <!-- 3-Day Forecast (right side) -->
+                    <div class="weather-forecast">
+                        {%- if briefing.weather.forecast -%}
+                            {%- for day in briefing.weather.forecast -%}
+                            <div class="forecast-day">
+                                <span class="forecast-day-name">{{ day.day_name }}</span>
+                                <span class="forecast-icon">
+                                    {%- set cond = day.conditions|lower -%}
+                                    {%- if 'clear' in cond or 'sunny' in cond -%}&#9728;&#65039;
+                                    {%- elif 'partly' in cond -%}&#9925;
+                                    {%- elif 'cloud' in cond or 'overcast' in cond -%}&#9729;&#65039;
+                                    {%- elif 'thunder' in cond or 'storm' in cond -%}&#9928;&#65039;
+                                    {%- elif 'rain' in cond or 'drizzle' in cond or 'shower' in cond -%}&#127783;&#65039;
+                                    {%- elif 'snow' in cond or 'flurr' in cond -%}&#127784;&#65039;
+                                    {%- elif 'fog' in cond or 'mist' in cond or 'haze' in cond -%}&#127787;&#65039;
+                                    {%- else -%}&#127780;&#65039;
+                                    {%- endif -%}
+                                </span>
+                                <span class="forecast-temps">
+                                    <span class="high">{{ day.high_f }}&deg;</span>
+                                    <span class="low">{{ day.low_f }}&deg;</span>
+                                </span>
+                            </div>
+                            {%- endfor -%}
+                        {%- endif -%}
+                    </div>
                 </div>
-                <div class="temperature">
-                    {{ briefing.weather.temperature_f }}<span class="temperature-unit">&deg;F</span>
-                </div>
-                <div class="weather-conditions">{{ briefing.weather.conditions }}</div>
-                <div class="weather-description">{{ briefing.weather.description }}</div>
                 {%- else -%}
                 <div class="weather-unavailable">Weather information unavailable</div>
                 {%- endif -%}
