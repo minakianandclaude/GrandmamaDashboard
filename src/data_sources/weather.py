@@ -12,7 +12,8 @@ from ..models import WeatherInfo, ForecastDay
 
 logger = logging.getLogger(__name__)
 
-# OpenWeatherMap Forecast API endpoint
+# OpenWeatherMap API endpoints
+OPENWEATHERMAP_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
 OPENWEATHERMAP_FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
 
 # Request timeout in seconds
@@ -276,10 +277,13 @@ def parse_weather_response(data: dict) -> Optional[WeatherInfo]:
 
 class WeatherSource:
     """
-    Fetches weather forecast data from OpenWeatherMap API.
+    Fetches weather data from OpenWeatherMap API.
 
     This class handles API communication and translates raw weather data
     into human-friendly descriptions suitable for elderly users.
+
+    Uses both the Current Weather API (for actual current temperature) and
+    the Forecast API (for high/low temps and multi-day forecast).
     """
 
     def __init__(self, config: WeatherConfig):
@@ -319,24 +323,19 @@ class WeatherSource:
 
         return params
 
-    def fetch(self) -> Optional[WeatherInfo]:
+    def _fetch_url(self, url: str, params: dict) -> Optional[dict]:
         """
-        Fetch weather forecast from OpenWeatherMap API.
+        Fetch JSON data from an API endpoint.
+
+        Args:
+            url: The API endpoint URL
+            params: Query parameters
 
         Returns:
-            WeatherInfo object with today's forecast, or None if fetch fails.
-            Failures are logged but do not raise exceptions.
+            Parsed JSON dict or None if request fails
         """
-        params = self._build_params()
-        if params is None:
-            return None
-
         try:
-            response = requests.get(
-                OPENWEATHERMAP_FORECAST_URL,
-                params=params,
-                timeout=REQUEST_TIMEOUT,
-            )
+            response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
 
             # Check for HTTP errors
             if response.status_code == 401:
@@ -352,24 +351,11 @@ class WeatherSource:
                 logger.warning(f"Weather API returned status {response.status_code}")
                 return None
 
-            # Parse JSON response
-            try:
-                data = response.json()
-            except ValueError as e:
-                logger.warning(f"Invalid JSON from weather API: {e}")
-                return None
+            return response.json()
 
-            # Parse into WeatherInfo
-            weather = parse_forecast_response(data)
-            if weather:
-                logger.debug(
-                    f"Weather fetched: {weather.temperature_f}°F "
-                    f"(High: {weather.high_f}°F, Low: {weather.low_f}°F), "
-                    f"{weather.conditions}"
-                )
-
-            return weather
-
+        except ValueError as e:
+            logger.warning(f"Invalid JSON from weather API: {e}")
+            return None
         except requests.exceptions.Timeout:
             logger.warning("Weather API request timed out")
             return None
@@ -379,3 +365,60 @@ class WeatherSource:
         except requests.exceptions.RequestException as e:
             logger.warning(f"Weather API request failed: {e}")
             return None
+
+    def fetch(self) -> Optional[WeatherInfo]:
+        """
+        Fetch weather from OpenWeatherMap APIs.
+
+        Makes two API calls:
+        1. Current Weather API - for the actual current temperature and conditions
+        2. Forecast API - for today's high/low and 3-day forecast
+
+        Returns:
+            WeatherInfo object with current temp and forecast, or None if fetch fails.
+            Failures are logged but do not raise exceptions.
+        """
+        params = self._build_params()
+        if params is None:
+            return None
+
+        # Fetch current weather for actual current temperature
+        current_data = self._fetch_url(OPENWEATHERMAP_CURRENT_URL, params)
+        if current_data is None:
+            return None
+
+        # Parse current weather
+        current_weather = parse_weather_response(current_data)
+        if current_weather is None:
+            return None
+
+        # Fetch forecast for high/low and multi-day forecast
+        forecast_data = self._fetch_url(OPENWEATHERMAP_FORECAST_URL, params)
+        if forecast_data is None:
+            # Return current weather without forecast data
+            logger.info("Forecast unavailable, returning current weather only")
+            return current_weather
+
+        # Parse forecast and merge with current weather
+        forecast_weather = parse_forecast_response(forecast_data)
+        if forecast_weather is None:
+            return current_weather
+
+        # Combine: current temp from current API, high/low/forecast from forecast API
+        combined = WeatherInfo(
+            temperature_f=current_weather.temperature_f,
+            conditions=current_weather.conditions,
+            description=current_weather.description,
+            icon_code=current_weather.icon_code,
+            high_f=forecast_weather.high_f,
+            low_f=forecast_weather.low_f,
+            forecast=forecast_weather.forecast,
+        )
+
+        logger.debug(
+            f"Weather fetched: {combined.temperature_f}°F "
+            f"(High: {combined.high_f}°F, Low: {combined.low_f}°F), "
+            f"{combined.conditions}"
+        )
+
+        return combined

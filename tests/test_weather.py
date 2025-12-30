@@ -274,8 +274,63 @@ class TestWeatherSource:
         )
 
     @pytest.fixture
-    def mock_success_response(self):
+    def mock_current_response(self):
+        """Create a mock successful current weather API response."""
+        return {
+            "main": {"temp": 48.5},
+            "weather": [{"description": "clear sky", "icon": "01d"}],
+        }
+
+    @pytest.fixture
+    def mock_forecast_response(self):
         """Create a mock successful forecast API response."""
+        from datetime import date, timedelta
+        today = date.today().strftime("%Y-%m-%d")
+        tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+        day_after = (date.today() + timedelta(days=2)).strftime("%Y-%m-%d")
+        return {
+            "list": [
+                {
+                    "dt_txt": f"{today} 09:00:00",
+                    "main": {"temp": 45.0},
+                    "weather": [{"description": "broken clouds", "icon": "04d"}],
+                },
+                {
+                    "dt_txt": f"{today} 12:00:00",
+                    "main": {"temp": 58.0},
+                    "weather": [{"description": "scattered clouds", "icon": "03d"}],
+                },
+                {
+                    "dt_txt": f"{today} 15:00:00",
+                    "main": {"temp": 55.0},
+                    "weather": [{"description": "broken clouds", "icon": "04d"}],
+                },
+                {
+                    "dt_txt": f"{tomorrow} 09:00:00",
+                    "main": {"temp": 42.0},
+                    "weather": [{"description": "clear sky", "icon": "01d"}],
+                },
+                {
+                    "dt_txt": f"{tomorrow} 15:00:00",
+                    "main": {"temp": 52.0},
+                    "weather": [{"description": "clear sky", "icon": "01d"}],
+                },
+                {
+                    "dt_txt": f"{day_after} 09:00:00",
+                    "main": {"temp": 40.0},
+                    "weather": [{"description": "light rain", "icon": "10d"}],
+                },
+                {
+                    "dt_txt": f"{day_after} 15:00:00",
+                    "main": {"temp": 48.0},
+                    "weather": [{"description": "light rain", "icon": "10d"}],
+                },
+            ],
+        }
+
+    @pytest.fixture
+    def mock_success_response(self):
+        """Create a mock successful forecast API response (legacy fixture)."""
         from datetime import date
         today = date.today().strftime("%Y-%m-%d")
         return {
@@ -355,23 +410,35 @@ class TestWeatherSource:
         assert params is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_success(self, mock_get, valid_config, mock_success_response):
-        """Test successful weather fetch from forecast API."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = mock_success_response
-        mock_get.return_value = mock_response
+    def test_fetch_success(self, mock_get, valid_config, mock_current_response, mock_forecast_response):
+        """Test successful weather fetch from both current and forecast APIs."""
+        # Mock responses for both API calls
+        mock_current = Mock()
+        mock_current.status_code = 200
+        mock_current.json.return_value = mock_current_response
+
+        mock_forecast = Mock()
+        mock_forecast.status_code = 200
+        mock_forecast.json.return_value = mock_forecast_response
+
+        # First call returns current weather, second returns forecast
+        mock_get.side_effect = [mock_current, mock_forecast]
 
         source = WeatherSource(valid_config)
         result = source.fetch()
 
         assert result is not None
         assert isinstance(result, WeatherInfo)
-        assert result.temperature_f == 52  # First forecast temp
-        assert result.high_f == 58  # Max of 52.3, 58.0, 55.0
-        assert result.low_f == 52  # Min of 52.3, 58.0, 55.0
-        assert result.conditions == "cloudy"  # Most common simplified condition
-        assert result.description == "a bit chilly"
+        # Current temp comes from current weather API
+        assert result.temperature_f == 48  # Rounded from 48.5
+        assert result.conditions == "clear"  # From current API
+        # High/low come from forecast API
+        assert result.high_f == 58  # Max of today's forecasts
+        assert result.low_f == 45  # Min of today's forecasts
+        # Forecast should have future days
+        assert len(result.forecast) == 2  # Tomorrow and day after
+        assert result.forecast[0].high_f == 52
+        assert result.forecast[0].low_f == 42
 
     @patch("src.data_sources.weather.requests.get")
     def test_fetch_401_invalid_key(self, mock_get, valid_config):
@@ -464,20 +531,30 @@ class TestWeatherSource:
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_uses_correct_url_and_timeout(self, mock_get, valid_config):
-        """Test that fetch uses correct URL and timeout."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "main": {"temp": 70},
-            "weather": [{"description": "clear", "icon": "01d"}],
-        }
-        mock_get.return_value = mock_response
+    def test_fetch_uses_correct_urls_and_timeout(self, mock_get, valid_config, mock_current_response, mock_forecast_response):
+        """Test that fetch uses correct URLs and timeout for both API calls."""
+        mock_current = Mock()
+        mock_current.status_code = 200
+        mock_current.json.return_value = mock_current_response
+
+        mock_forecast = Mock()
+        mock_forecast.status_code = 200
+        mock_forecast.json.return_value = mock_forecast_response
+
+        mock_get.side_effect = [mock_current, mock_forecast]
 
         source = WeatherSource(valid_config)
         source.fetch()
 
-        mock_get.assert_called_once()
-        call_args = mock_get.call_args
-        assert call_args.kwargs["timeout"] == 10
-        assert "api.openweathermap.org" in call_args.args[0]
+        # Should have made two API calls
+        assert mock_get.call_count == 2
+
+        # First call should be to current weather API
+        first_call = mock_get.call_args_list[0]
+        assert "weather" in first_call.args[0]  # Current weather endpoint
+        assert first_call.kwargs["timeout"] == 10
+
+        # Second call should be to forecast API
+        second_call = mock_get.call_args_list[1]
+        assert "forecast" in second_call.args[0]  # Forecast endpoint
+        assert second_call.kwargs["timeout"] == 10
