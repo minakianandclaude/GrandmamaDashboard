@@ -144,6 +144,13 @@ weather:
   city: "New York, NY"
 ```
 
+#### Weather Features
+
+- **Current Temperature**: Real-time temperature from OpenWeatherMap Current Weather API
+- **Today's High/Low**: Calculated from the day's forecast intervals
+- **3-Day Forecast**: Shows upcoming days with icons and high/low temps
+- **Caching**: Weather data is cached for reliability (see Data Files below)
+
 ### Google Calendar
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
@@ -203,6 +210,29 @@ dashboard:
   port: 8080
 ```
 
+## Data Files
+
+The dashboard stores data files in your home directory for caching and tokens:
+
+| File | Location | Purpose |
+|------|----------|---------|
+| Weather Cache | `~/.grandmama_dashboard/weather_cache.json` | Cached weather & forecast data |
+| Google Token | `./token.json` (configurable) | Google Calendar OAuth token |
+
+### Weather Cache
+
+Weather data is automatically cached after each successful API fetch. This provides:
+
+- **Reliability**: If the OpenWeatherMap API is temporarily unavailable, the dashboard displays cached data
+- **Forecast Preservation**: The 3-day forecast remains visible even if only the current weather API fails
+- **Graceful Degradation**: Fresh current temperature is combined with cached forecast when possible
+
+The cache includes a timestamp showing when the data was last updated. To clear the cache:
+
+```bash
+rm ~/.grandmama_dashboard/weather_cache.json
+```
+
 ## Development
 
 ### Running Tests
@@ -225,12 +255,12 @@ python -m pytest tests/test_weather.py -v
 | Config | 26 |
 | Models | 17 |
 | DateTime Source | 51 |
-| Weather Source | 50 |
+| Weather Source | 51 |
 | Calendar Source | 40 |
 | Briefing | 26 |
 | Dashboard Server | 38 |
 | CLI | 29 |
-| **Total** | **277** |
+| **Total** | **278** |
 
 ### Project Structure
 
@@ -286,9 +316,16 @@ GrandmamaDashboard/
     "time_of_day": "7:15 in the morning"
   },
   "weather": {
-    "temperature_f": 45,
-    "conditions": "cloudy",
-    "description": "a bit chilly"
+    "temperature_f": 34,
+    "conditions": "clear",
+    "description": "cold",
+    "high_f": 42,
+    "low_f": 28,
+    "forecast": [
+      { "day_name": "Wed", "high_f": 45, "low_f": 32, "conditions": "cloudy" },
+      { "day_name": "Thu", "high_f": 38, "low_f": 25, "conditions": "snowy" },
+      { "day_name": "Fri", "high_f": 40, "low_f": 30, "conditions": "clear" }
+    ]
   },
   "appointments": [
     {
