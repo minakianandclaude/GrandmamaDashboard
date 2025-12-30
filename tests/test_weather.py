@@ -274,6 +274,11 @@ class TestWeatherSource:
         )
 
     @pytest.fixture
+    def empty_cache_path(self, tmp_path):
+        """Provide an empty cache path for tests that should not use cache."""
+        return tmp_path / "weather_cache.json"
+
+    @pytest.fixture
     def mock_current_response(self):
         """Create a mock successful current weather API response."""
         return {
@@ -441,92 +446,92 @@ class TestWeatherSource:
         assert result.forecast[0].low_f == 42
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_401_invalid_key(self, mock_get, valid_config):
-        """Test handling of invalid API key."""
+    def test_fetch_401_invalid_key(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of invalid API key (no cache fallback)."""
         mock_response = Mock()
         mock_response.status_code = 401
         mock_get.return_value = mock_response
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_404_location_not_found(self, mock_get, valid_config):
-        """Test handling of location not found."""
+    def test_fetch_404_location_not_found(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of location not found (no cache fallback)."""
         mock_response = Mock()
         mock_response.status_code = 404
         mock_get.return_value = mock_response
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_429_rate_limit(self, mock_get, valid_config):
-        """Test handling of rate limit."""
+    def test_fetch_429_rate_limit(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of rate limit (no cache fallback)."""
         mock_response = Mock()
         mock_response.status_code = 429
         mock_get.return_value = mock_response
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_500_server_error(self, mock_get, valid_config):
-        """Test handling of server error."""
+    def test_fetch_500_server_error(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of server error (no cache fallback)."""
         mock_response = Mock()
         mock_response.status_code = 500
         mock_get.return_value = mock_response
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_invalid_json(self, mock_get, valid_config):
-        """Test handling of invalid JSON response."""
+    def test_fetch_invalid_json(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of invalid JSON response (no cache fallback)."""
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.side_effect = ValueError("Invalid JSON")
         mock_get.return_value = mock_response
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_timeout(self, mock_get, valid_config):
-        """Test handling of request timeout."""
+    def test_fetch_timeout(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of request timeout (no cache fallback)."""
         mock_get.side_effect = requests.exceptions.Timeout()
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_connection_error(self, mock_get, valid_config):
-        """Test handling of connection error."""
+    def test_fetch_connection_error(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of connection error (no cache fallback)."""
         mock_get.side_effect = requests.exceptions.ConnectionError()
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
     @patch("src.data_sources.weather.requests.get")
-    def test_fetch_generic_request_error(self, mock_get, valid_config):
-        """Test handling of generic request error."""
+    def test_fetch_generic_request_error(self, mock_get, valid_config, empty_cache_path):
+        """Test handling of generic request error (no cache fallback)."""
         mock_get.side_effect = requests.exceptions.RequestException("Network error")
 
-        source = WeatherSource(valid_config)
+        source = WeatherSource(valid_config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
-    def test_fetch_no_config(self):
-        """Test fetch with invalid config returns None."""
+    def test_fetch_no_config(self, empty_cache_path):
+        """Test fetch with invalid config returns None (no cache fallback)."""
         config = WeatherConfig()  # No API key or location
-        source = WeatherSource(config)
+        source = WeatherSource(config, cache_path=empty_cache_path)
         result = source.fetch()
         assert result is None
 
@@ -558,3 +563,34 @@ class TestWeatherSource:
         second_call = mock_get.call_args_list[1]
         assert "forecast" in second_call.args[0]  # Forecast endpoint
         assert second_call.kwargs["timeout"] == 10
+
+    @patch("src.data_sources.weather.requests.get")
+    def test_cache_fallback_on_api_failure(self, mock_get, valid_config, mock_current_response, mock_forecast_response, tmp_path):
+        """Test that cache is used as fallback when API fails."""
+        cache_path = tmp_path / "weather_cache.json"
+
+        # First call succeeds - this populates the cache
+        mock_current = Mock()
+        mock_current.status_code = 200
+        mock_current.json.return_value = mock_current_response
+
+        mock_forecast = Mock()
+        mock_forecast.status_code = 200
+        mock_forecast.json.return_value = mock_forecast_response
+
+        mock_get.side_effect = [mock_current, mock_forecast]
+
+        source = WeatherSource(valid_config, cache_path=cache_path)
+        result = source.fetch()
+        assert result is not None
+        assert cache_path.exists()  # Cache file should be created
+
+        # Second call fails - should fall back to cache
+        mock_get.side_effect = requests.exceptions.ConnectionError()
+
+        source2 = WeatherSource(valid_config, cache_path=cache_path)
+        cached_result = source2.fetch()
+
+        assert cached_result is not None
+        assert cached_result.temperature_f == 48  # Same as original
+        assert len(cached_result.forecast) == 2  # Forecast preserved

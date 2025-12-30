@@ -1,8 +1,10 @@
 """Weather data source for the Good Morning Dashboard."""
 
+import json
 import logging
 from collections import Counter
 from datetime import datetime, date
+from pathlib import Path
 from typing import Optional
 
 import requests
@@ -11,6 +13,9 @@ from ..config import WeatherConfig
 from ..models import WeatherInfo, ForecastDay
 
 logger = logging.getLogger(__name__)
+
+# Default cache file location
+DEFAULT_CACHE_PATH = Path.home() / ".grandmama_dashboard" / "weather_cache.json"
 
 # OpenWeatherMap API endpoints
 OPENWEATHERMAP_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
@@ -284,16 +289,73 @@ class WeatherSource:
 
     Uses both the Current Weather API (for actual current temperature) and
     the Forecast API (for high/low temps and multi-day forecast).
+
+    Caches successful responses to provide fallback data when API is unavailable.
     """
 
-    def __init__(self, config: WeatherConfig):
+    def __init__(self, config: WeatherConfig, cache_path: Optional[Path] = None):
         """
         Initialize the WeatherSource.
 
         Args:
             config: WeatherConfig with API key and location settings
+            cache_path: Optional path for weather cache file (defaults to ~/.grandmama_dashboard/weather_cache.json)
         """
         self.config = config
+        self.cache_path = cache_path or DEFAULT_CACHE_PATH
+
+    def _save_to_cache(self, weather: WeatherInfo) -> None:
+        """Save weather data to cache file."""
+        try:
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_data = {
+                "cached_at": datetime.now().isoformat(),
+                "weather": weather.to_dict(),
+            }
+            with open(self.cache_path, "w") as f:
+                json.dump(cache_data, f)
+            logger.debug(f"Weather cached to {self.cache_path}")
+        except (OSError, IOError) as e:
+            logger.warning(f"Failed to save weather cache: {e}")
+
+    def _load_from_cache(self) -> Optional[WeatherInfo]:
+        """Load weather data from cache file."""
+        try:
+            if not self.cache_path.exists():
+                return None
+
+            with open(self.cache_path) as f:
+                cache_data = json.load(f)
+
+            weather_dict = cache_data.get("weather", {})
+            cached_at = cache_data.get("cached_at", "unknown")
+
+            # Reconstruct ForecastDay objects
+            forecast_list = []
+            for day_dict in weather_dict.get("forecast", []):
+                forecast_list.append(ForecastDay(
+                    day_name=day_dict["day_name"],
+                    high_f=day_dict["high_f"],
+                    low_f=day_dict["low_f"],
+                    conditions=day_dict["conditions"],
+                ))
+
+            weather = WeatherInfo(
+                temperature_f=weather_dict["temperature_f"],
+                conditions=weather_dict["conditions"],
+                description=weather_dict["description"],
+                icon_code=weather_dict.get("icon_code"),
+                high_f=weather_dict.get("high_f"),
+                low_f=weather_dict.get("low_f"),
+                forecast=forecast_list,
+            )
+
+            logger.info(f"Loaded weather from cache (cached at {cached_at})")
+            return weather
+
+        except (OSError, IOError, json.JSONDecodeError, KeyError, TypeError) as e:
+            logger.warning(f"Failed to load weather cache: {e}")
+            return None
 
     def _build_params(self) -> Optional[dict]:
         """
@@ -374,27 +436,45 @@ class WeatherSource:
         1. Current Weather API - for the actual current temperature and conditions
         2. Forecast API - for today's high/low and 3-day forecast
 
+        On success, caches the result. On failure, returns cached data if available.
+
         Returns:
-            WeatherInfo object with current temp and forecast, or None if fetch fails.
-            Failures are logged but do not raise exceptions.
+            WeatherInfo object with current temp and forecast, or None if fetch fails
+            and no cache is available. Failures are logged but do not raise exceptions.
         """
         params = self._build_params()
         if params is None:
-            return None
+            # No valid config - try cache as last resort
+            return self._load_from_cache()
 
         # Fetch current weather for actual current temperature
         current_data = self._fetch_url(OPENWEATHERMAP_CURRENT_URL, params)
         if current_data is None:
-            return None
+            logger.info("Current weather API failed, trying cache")
+            return self._load_from_cache()
 
         # Parse current weather
         current_weather = parse_weather_response(current_data)
         if current_weather is None:
-            return None
+            return self._load_from_cache()
 
         # Fetch forecast for high/low and multi-day forecast
         forecast_data = self._fetch_url(OPENWEATHERMAP_FORECAST_URL, params)
         if forecast_data is None:
+            # Try to get forecast from cache and merge with fresh current weather
+            cached = self._load_from_cache()
+            if cached and cached.forecast:
+                logger.info("Using cached forecast with fresh current weather")
+                combined = WeatherInfo(
+                    temperature_f=current_weather.temperature_f,
+                    conditions=current_weather.conditions,
+                    description=current_weather.description,
+                    icon_code=current_weather.icon_code,
+                    high_f=cached.high_f,
+                    low_f=cached.low_f,
+                    forecast=cached.forecast,
+                )
+                return combined
             # Return current weather without forecast data
             logger.info("Forecast unavailable, returning current weather only")
             return current_weather
@@ -414,6 +494,9 @@ class WeatherSource:
             low_f=forecast_weather.low_f,
             forecast=forecast_weather.forecast,
         )
+
+        # Cache successful result
+        self._save_to_cache(combined)
 
         logger.debug(
             f"Weather fetched: {combined.temperature_f}°F "
