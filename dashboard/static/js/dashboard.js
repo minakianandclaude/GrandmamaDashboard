@@ -106,19 +106,12 @@
         if (!match) return timeOfDay;
 
         const time = match[1];
-        const hour = parseInt(time.split(':')[0]);
 
-        // Determine AM/PM based on description
-        if (timeOfDay.includes('morning') || timeOfDay.includes('night')) {
-            if (hour === 12) {
-                return timeOfDay.includes('night') ? '12:' + time.split(':')[1] + ' AM' : time + ' PM';
-            }
-            return time + (timeOfDay.includes('morning') ? ' AM' : ' AM');
-        } else if (timeOfDay.includes('afternoon') || timeOfDay.includes('evening')) {
-            if (hour === 12) {
-                return time + ' PM';
-            }
+        // Determine AM/PM based on time period description
+        if (timeOfDay.includes('afternoon') || timeOfDay.includes('evening')) {
             return time + ' PM';
+        } else if (timeOfDay.includes('morning') || timeOfDay.includes('night')) {
+            return time + ' AM';
         }
 
         return time;

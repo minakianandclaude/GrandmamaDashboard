@@ -46,7 +46,7 @@
                 <div class="time-display">
                     {%- if briefing.date_info -%}
                         {{ briefing.date_info.time_of_day.split(' ')[0] }}
-                        {%- if 'morning' in briefing.date_info.time_of_day %} AM
+                        {%- if 'morning' in briefing.date_info.time_of_day or 'night' in briefing.date_info.time_of_day %} AM
                         {%- elif 'afternoon' in briefing.date_info.time_of_day or 'evening' in briefing.date_info.time_of_day %} PM
                         {%- endif -%}
                     {%- else -%}
