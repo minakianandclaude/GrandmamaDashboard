@@ -6,24 +6,26 @@ A personalized morning briefing system for elderly care companions. Displays a c
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | Project structure, config, data models | Complete |
-| 2 | Date/Time source | Complete |
-| 3 | Weather source (OpenWeatherMap) | Complete |
-| 4 | Calendar source (Google Calendar) | Complete |
-| 5 | Briefing assembly & mock data | Complete |
-| 6 | Dashboard backend (Flask API) | Complete |
-| 7 | Dashboard frontend (TV UI) | Complete |
-| 8 | CLI integration | Complete |
-| 9 | Spoken script generator (TTS) | Pending |
-| 10 | Documentation & polish | Pending |
+| 1 | Project structure, config, data models | ✅ Complete |
+| 2 | Date/Time source | ✅ Complete |
+| 3 | Weather source (OpenWeatherMap) | ✅ Complete |
+| 4 | Calendar source (Google Calendar) | ✅ Complete |
+| 5 | Briefing assembly & mock data | ✅ Complete |
+| 6 | Dashboard backend (Flask API) | ✅ Complete |
+| 7 | Dashboard frontend (TV UI) | ✅ Complete |
+| 8 | CLI integration | ✅ Complete |
+| 9 | Spoken script generator (TTS) | 🔶 Partial |
+| 10 | Documentation & polish | 🔶 In Progress |
 
 ## Features
 
-- **Visual Dashboard**: Full-screen TV display with large, readable text
-- **Spoken Script**: Natural language output for text-to-speech
-- **Weather**: Current conditions with practical descriptions ("a bit chilly")
-- **Calendar**: Today's appointments from Google Calendar
-- **Prep Reminders**: "Sarah will help you get ready around 1:30"
+- **Visual Dashboard**: Full-screen TV display with large, readable text optimized for elderly viewing
+- **3-Day Weather Forecast**: Current conditions, today's high/low, and 3-day forecast with icons
+- **Weather Caching**: Retains forecast data for reliability when API is unavailable
+- **Calendar Integration**: Today's appointments from Google Calendar with OAuth
+- **Prep Reminders**: Configurable reminders like "Sarah will help you get ready around 1:30"
+- **Spoken Script**: Natural language output for text-to-speech systems
+- **Three Themes**: Calm (dark), Bright (light), and High Contrast for accessibility
 - **Graceful Degradation**: Skips unavailable data sources without crashing
 
 ## Quick Start
