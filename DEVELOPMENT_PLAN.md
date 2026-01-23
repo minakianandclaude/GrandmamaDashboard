@@ -11,6 +11,24 @@ The system aggregates data from multiple sources (time, weather, calendar) and p
 
 ---
 
+## Implementation Status Summary
+
+| Phase | Description | Status | Tests |
+|-------|-------------|--------|-------|
+| 1 | Project Structure & Core Data Models | ✅ Complete | 43 |
+| 2 | Date/Time Source | ✅ Complete | 51 |
+| 3 | Weather Data Source | ✅ Complete | 51 |
+| 4 | Google Calendar Data Source | ✅ Complete | 40 |
+| 5 | Briefing Assembly & Mock Data | ✅ Complete | 26 |
+| 6 | Dashboard Backend (API Server) | ✅ Complete | 38 |
+| 7 | Dashboard Frontend (Visual UI) | ✅ Complete | - |
+| 8 | CLI Integration | ✅ Complete | 29 |
+| 9 | Spoken Script Generator | 🔶 Partial | - |
+| 10 | Documentation & Polish | 🔶 In Progress | - |
+| **Total** | | | **278** |
+
+---
+
 ## Phase 1: Project Structure & Core Data Models ✅
 
 ### Goal
@@ -63,13 +81,13 @@ GrandmamaDashboard/
 - Verify dataclass serialization to dict/JSON
 - Test environment variable override precedence
 
-### Status: COMPLETE
+### Status: ✅ COMPLETE
 - 43 tests passing
 - All core infrastructure in place
 
 ---
 
-## Phase 2: Date/Time Source
+## Phase 2: Date/Time Source ✅
 
 ### Goal
 Create a reliable date/time module that produces conversational date strings with proper ordinal suffixes and time-of-day descriptions.
@@ -117,9 +135,12 @@ class DateTimeSource:
 - Test with various timezones
 - Mock `datetime.now()` for deterministic tests
 
+### Status: ✅ COMPLETE
+- 51 tests passing
+
 ---
 
-## Phase 3: Weather Data Source
+## Phase 3: Weather Data Source ✅
 
 ### Goal
 Fetch current weather from OpenWeatherMap API and translate conditions into practical, human-friendly descriptions.
@@ -132,7 +153,8 @@ Fetch current weather from OpenWeatherMap API and translate conditions into prac
 - Include weather icon code for dashboard display
 
 ### API Integration
-- Endpoint: `api.openweathermap.org/data/2.5/weather`
+- **Current Weather Endpoint**: `api.openweathermap.org/data/2.5/weather`
+- **Forecast Endpoint**: `api.openweathermap.org/data/2.5/forecast`
 - Parameters: lat/lon or city name, units=imperial, appid from env
 
 ### Temperature Descriptions
@@ -160,9 +182,17 @@ Fetch current weather from OpenWeatherMap API and translate conditions into prac
 - Test graceful failure when API is unreachable
 - Test with missing API key
 
+### Status: ✅ COMPLETE (Enhanced)
+- 51 tests passing
+- **Enhancements beyond original plan:**
+  - Dual API calls: Current Weather API (actual temp) + Forecast API (high/low, forecast)
+  - 3-day forecast with daily high/low and conditions
+  - Weather caching to `~/.grandmama_dashboard/weather_cache.json` for API failure fallback
+  - `ForecastDay` model for multi-day forecast data
+
 ---
 
-## Phase 4: Google Calendar Data Source
+## Phase 4: Google Calendar Data Source ✅
 
 ### Goal
 Fetch today's appointments from Google Calendar using OAuth 2.0, with support for prep time reminders.
@@ -195,9 +225,14 @@ Fetch today's appointments from Google Calendar using OAuth 2.0, with support fo
 - Test empty calendar scenario
 - Test with `--mock` flag for no-credential testing
 
+### Status: ✅ COMPLETE
+- 40 tests passing
+- OAuth flow working with browser-based authorization
+- Prep reminders generated automatically based on `prep_reminder_minutes` config
+
 ---
 
-## Phase 5: Briefing Assembly & Mock Data
+## Phase 5: Briefing Assembly & Mock Data ✅
 
 ### Goal
 Create the orchestration layer that assembles data from all sources into a complete Briefing object, with mock data support.
@@ -219,9 +254,12 @@ Create the orchestration layer that assembles data from all sources into a compl
 - Test partial failure scenarios
 - Verify JSON output matches expected schema
 
+### Status: ✅ COMPLETE
+- 26 tests passing
+
 ---
 
-## Phase 6: Dashboard Backend (API Server)
+## Phase 6: Dashboard Backend (API Server) ✅
 
 ### Goal
 Create a lightweight web server that serves the dashboard UI and provides a JSON API for briefing data.
@@ -239,6 +277,7 @@ Create a lightweight web server that serves the dashboard UI and provides a JSON
 GET /                  # Dashboard HTML page
 GET /api/briefing      # JSON briefing data
 GET /api/health        # Health check
+GET /api/config        # Display configuration
 ```
 
 ### Alternatives Considered
@@ -254,16 +293,15 @@ GET /api/health        # Health check
 - Test mock mode serves fake data
 - Test error responses for failed data sources
 
-### Status: COMPLETE
-- 34 tests passing
+### Status: ✅ COMPLETE
+- 38 tests passing
 - Flask app with `/`, `/api/briefing`, `/api/health`, `/api/config` endpoints
-- Basic placeholder HTML template (full UI in Phase 7)
 - CORS headers for development
 - Mock mode support via `--mock` flag
 
 ---
 
-## Phase 7: Dashboard Frontend (Visual UI)
+## Phase 7: Dashboard Frontend (Visual UI) ✅
 
 ### Goal
 Create a beautiful, TV-optimized dashboard interface with large readable text, calming colors, and clear visual hierarchy.
@@ -290,23 +328,19 @@ Create a beautiful, TV-optimized dashboard interface with large readable text, c
 │              Good Morning, Eleanor                      │
 │                                                         │
 │    ┌─────────────────┐    ┌─────────────────────────┐  │
-│    │                 │    │                         │  │
-│    │   7:15 AM       │    │   52°F                  │  │
-│    │   Tuesday       │    │   ☁️ Partly Cloudy      │  │
-│    │   January 14th  │    │   A bit chilly today    │  │
-│    │                 │    │                         │  │
+│    │                 │    │  52°F     │  Sat  ☀ 55° │  │
+│    │   7:15 AM       │    │  ☁️ Cloudy │  Sun  🌧 48° │  │
+│    │   Tuesday       │    │  H:58 L:45│  Mon  ⛅ 52° │  │
+│    │   January 14th  │    │           │             │  │
 │    └─────────────────┘    └─────────────────────────┘  │
 │                                                         │
 │    ┌───────────────────────────────────────────────┐   │
 │    │  Today's Schedule                              │   │
 │    │                                                │   │
 │    │  2:30 PM  Doctor's Appointment                 │   │
-│    │           Dr. Martinez - Cardiology            │   │
 │    │           Sarah will help you get ready at 1:30│   │
 │    │                                                │   │
 │    └───────────────────────────────────────────────┘   │
-│                                                         │
-│           Let me know if you need anything.             │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -333,7 +367,7 @@ Create a beautiful, TV-optimized dashboard interface with large readable text, c
 - Test auto-refresh functionality
 - Accessibility testing (contrast ratios, font sizes)
 
-### Status: COMPLETE
+### Status: ✅ COMPLETE (Enhanced)
 - Full CSS implementation with three themes (calm, bright, high_contrast)
 - Responsive grid layout optimized for TV displays
 - Weather icons via emoji mapping
@@ -342,11 +376,15 @@ Create a beautiful, TV-optimized dashboard interface with large readable text, c
 - Smooth fade animations on data updates
 - Loading spinner and error states
 - noscript fallback for meta refresh
-- 4 additional tests for frontend features
+- **Enhancements beyond original plan:**
+  - Weather tile redesigned with 3-day forecast display
+  - Today's weather on left (50%), 3-day forecast stacked on right (50%)
+  - High/low temperatures displayed for today
+  - AM/PM time display fixes for all time periods
 
 ---
 
-## Phase 8: CLI Integration
+## Phase 8: CLI Integration ✅
 
 ### Goal
 Provide command-line interface for running the dashboard server and generating output.
@@ -369,8 +407,9 @@ python -m src.cli dashboard --mock       # Use mock data
 python -m src.cli briefing               # Print JSON
 python -m src.cli briefing --mock        # With mock data
 
-# Future: spoken script
+# Spoken script
 python -m src.cli script                 # Print spoken script
+python -m src.cli script --mock          # With mock data
 ```
 
 ### Alternatives Considered
@@ -384,7 +423,7 @@ python -m src.cli script                 # Print spoken script
 - Test flag combinations
 - Test error handling and exit codes
 
-### Status: COMPLETE
+### Status: ✅ COMPLETE
 - Full CLI with `dashboard`, `briefing`, and `script` commands
 - `--mock` flag on each command for testing without APIs
 - `--port` and `--debug` flags for dashboard command
@@ -394,7 +433,7 @@ python -m src.cli script                 # Print spoken script
 
 ---
 
-## Phase 9: Spoken Script Generator (TTS Prep)
+## Phase 9: Spoken Script Generator 🔶
 
 ### Goal
 Transform the structured Briefing into a warm, natural spoken script suitable for TTS.
@@ -434,9 +473,17 @@ Let me know if you need anything.
 - Test with 0, 1, and multiple appointments
 - Verify warm, unhurried tone in output
 
+### Status: 🔶 PARTIAL
+- Basic script generation implemented in CLI
+- **TODO:**
+  - Add high/low temperatures to spoken script
+  - Add 3-day forecast summary to spoken script (optional)
+  - Improve pluralization and natural language flow
+  - Add unit tests for script generator
+
 ---
 
-## Phase 10: Documentation & Polish
+## Phase 10: Documentation & Polish 🔶
 
 ### Goal
 Finalize the project with comprehensive documentation and example configurations.
@@ -447,6 +494,18 @@ Finalize the project with comprehensive documentation and example configurations
 - requirements.txt with pinned versions
 - Screenshots of dashboard
 - Setup guide for OAuth credentials
+
+### Status: 🔶 IN PROGRESS
+- ✅ README with comprehensive setup instructions
+- ✅ API setup guides (OpenWeatherMap, Google Calendar)
+- ✅ CLI usage documentation
+- ✅ Configuration reference with environment variables
+- ✅ Data files documentation (weather cache location)
+- ✅ Example JSON output with forecast data
+- **TODO:**
+  - Add screenshots of dashboard
+  - Create CLAUDE.md with project context for AI assistants
+  - Final review and polish
 
 ---
 
@@ -473,3 +532,18 @@ The `--mock` flag will provide:
 - Fake weather: 52°F, partly cloudy
 - Sample appointments: 1-2 events with realistic titles
 - Allows full dashboard testing without any API credentials
+
+---
+
+## Recent Enhancements (Beyond Original Plan)
+
+### Weather System Improvements
+1. **Dual API Architecture**: Separate calls to Current Weather and Forecast APIs for accurate current temperature + forecast data
+2. **3-Day Forecast**: Added `ForecastDay` model and UI display for upcoming days
+3. **Weather Caching**: Automatic caching to `~/.grandmama_dashboard/weather_cache.json` with fallback on API failure
+4. **Enhanced Weather Tile**: Split layout with today's weather (left) and 3-day forecast (right)
+
+### UI/UX Fixes
+1. **Time Display**: Fixed AM/PM display for all time periods (morning, afternoon, evening, night)
+2. **Temperature Spacing**: Added proper spacing between temperature number and °F unit
+3. **Removed Time Period Badge**: Cleaned up "in the morning" redundant display
